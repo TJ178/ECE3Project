@@ -9,17 +9,7 @@
 
 #include <ECE3.h>
 
-//defines for motor driver pins
-/*#define PWML 40
-#define PWMR 39
-#define DIRL 29
-#define DIRR 30
-#define NSLPL 31
-#define NSLPR 11
-#define ENCODE_L P5_2
-#define ENCODE_R P5_0*/
-
-//define button pin
+//define button pins
 #define BUTTON_R P1_1
 #define BUTTON_L P1_4
 
@@ -38,10 +28,6 @@ bool dispAdjustedValues = false;
 //button debounce timer
 long buttonPressMillis = 0;
 
-/*bool white1 = false;
-bool black = false;
-bool white2 = false;*/
-
 void setup() {
   Serial.begin(9600);
   
@@ -52,20 +38,6 @@ void setup() {
   pinMode(BUTTON_L, INPUT_PULLUP);
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
-  
- /* //setup motor pins
-  pinMode(DIRL, OUTPUT);
-  pinMode(DIRR, OUTPUT);
-  pinMode(NSLPL, OUTPUT);
-  pinMode(NSLPR, OUTPUT);
-  pinMode(ENCODE_R, INPUT);
-  pinMode(ENCODE_L, INPUT);
-
-
-  digitalWrite(NSLPL, HIGH);
-  digitalWrite(NSLPR, HIGH);
-  digitalWrite(DIRR, LOW);
-  digitalWrite(DIRL, LOW);*/
 
   delay(500);
 
@@ -114,20 +86,6 @@ void loop() {
       }
       Serial.println("");
     }
-
-
-    
-     /* //disused bc no longer using motors
-      *  //keep track of phases
-      if(rawSensorValues[4] < 700){
-        if(white1 && black){
-          white2 = true;
-        }else{
-          white1 = true;
-        }
-      }else if(rawSensorValues[4] > 1250 && !black){
-        black = true;
-      }*/
   }
 
   //button debounce code
@@ -172,13 +130,3 @@ void dispResults(){
   
   delay(10000);
 }
-
-/*//disused bc no longer using motors
- * void driveMotors(int pwmL, int pwmR){
-  if(pwmL == 0 && pwmR == 0){
-    digitalWrite(NSLPR, LOW);
-    digitalWrite(NSLPL, LOW);
-  }
-  analogWrite(PWMR, pwmR);
-  analogWrite(PWML, pwmL);
-}*/
