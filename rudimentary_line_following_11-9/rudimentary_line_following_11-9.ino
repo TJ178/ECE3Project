@@ -11,6 +11,12 @@
 #define BUTTON_R P1_1
 #define BUTTON_L P1_4
 
+#define BASE_SPEED 50
+#define MIN_SPEED 40
+#define MAX_SPEED 150
+
+#define GAIN 0.0002
+
 
 int bumpers[] = {24, 25, 6, 27, 8, 28};
 
@@ -28,10 +34,8 @@ long lastDerivativeTime = 0;
 uint16_t derivativeUpdateRate = 250; //millis between updates
 
 
-uint8_t baseSpeed = 80;
-
-float motorR = baseSpeed;
-float motorL = baseSpeed;
+float motorR = BASE_SPEED;
+float motorL = BASE_SPEED;
 
 bool finished = false;
 
@@ -64,7 +68,9 @@ void setup() {
   calibrateSensors();
   digitalWrite(BLUE_LED, HIGH); 
 
-  delay(2000);
+  delay(100);
+  while(digitalRead(BUTTON_L)){};
+  
   driveMotors(0, 0);
   digitalWrite(NSLPR, HIGH);
   digitalWrite(NSLPL, HIGH);
@@ -79,6 +85,7 @@ void setup() {
   digitalWrite(RED_LED, LOW);
   digitalWrite(BLUE_LED, LOW);
   digitalWrite(GREEN_LED, HIGH);
+  delay(500);
 }
 
 void loop() {
@@ -104,21 +111,22 @@ void loop() {
     }
 
 
-    motorR =  baseSpeed + baseSpeed * ((location + derivativeError) * .0001);
-    motorL = baseSpeed + baseSpeed * ((location + derivativeError) *  -.0001);
+    motorR =  BASE_SPEED + BASE_SPEED * ((location + derivativeError) * GAIN);
+    motorL = BASE_SPEED + BASE_SPEED * ((location + derivativeError) *  -GAIN);
     
-    if(motorR < 20){
-      motorR = 20;
+    if(motorR < MIN_SPEED){
+      motorR = MIN_SPEED;
     }
-    if(motorR > 100){
-      motorR == 100;
+    if(motorR > MAX_SPEED){
+      motorR == MAX_SPEED;
     }
-    if(motorL < 20){
-      motorL = 20;
+    if(motorL < MIN_SPEED){
+      motorL = MIN_SPEED;
     }
-    if(motorL > 100){
-      motorL = 100;
+    if(motorL > MAX_SPEED){
+      motorL = MAX_SPEED;
     }
+    
     driveMotors( (int) motorL, (int) motorR);
     //Serial.print(motorL);
     //Serial.print('\t');
