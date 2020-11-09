@@ -42,6 +42,7 @@ void setup() {
    //setup button & LED pins
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
+  pinMode(BLUE_LED, OUTPUT);
 
   //setup bumper pins
   for(int i = 0; i < 6; i++){
@@ -59,8 +60,9 @@ void setup() {
   pinMode(BUTTON_R, INPUT_PULLUP);
 
   digitalWrite(RED_LED, HIGH);
-  calibrateSensors();
   while(digitalRead(BUTTON_L)){};
+  calibrateSensors();
+  digitalWrite(BLUE_LED, HIGH); 
 
   delay(2000);
   driveMotors(0, 0);
@@ -75,6 +77,7 @@ void setup() {
   lastLocation = sensorFusion();
 
   digitalWrite(RED_LED, LOW);
+  digitalWrite(BLUE_LED, LOW);
   digitalWrite(GREEN_LED, HIGH);
 }
 
