@@ -8,6 +8,9 @@
 #define NSLPR 11
 #define ENCODE_L P5_2
 #define ENCODE_R P5_0
+#define BUTTON_R P1_1
+#define BUTTON_L P1_4
+
 
 int bumpers[] = {24, 25, 6, 27, 8, 28};
 
@@ -15,10 +18,17 @@ int bumpers[] = {24, 25, 6, 27, 8, 28};
 uint16_t sensorMinOffset[] = {597, 493, 534, 410, 455, 560, 516, 580}; 
 float sensorMaxFactor[] = {1653.0f, 1757.0f, 1716.0f, 1268.0f, 1317.0f, 1690.0f, 1734.0f, 1670.0f}; 
 
+
 uint16_t rawSensorValues[8];
 uint16_t sensorValues[8];
 
-uint8_t baseSpeed = 40;
+float lastLocation;
+float derivativeError;
+long lastDerivativeTime = 0;
+uint16_t derivativeUpdateRate = 250; //millis between updates
+
+
+uint8_t baseSpeed = 80;
 
 float motorR = baseSpeed;
 float motorL = baseSpeed;
@@ -45,22 +55,34 @@ void setup() {
   pinMode(NSLPR, OUTPUT);
   pinMode(ENCODE_R, INPUT);
   pinMode(ENCODE_L, INPUT);
+  pinMode(BUTTON_L, INPUT_PULLUP);
+  pinMode(BUTTON_R, INPUT_PULLUP);
 
-  delay(500);
+  digitalWrite(RED_LED, HIGH);
+  calibrateSensors();
+  while(digitalRead(BUTTON_L)){};
+
+  delay(2000);
   driveMotors(0, 0);
   digitalWrite(NSLPR, HIGH);
   digitalWrite(NSLPL, HIGH);
   digitalWrite(DIRL, LOW);
   digitalWrite(DIRR, LOW);
 
-  digitalWrite(RED_LED, HIGH);
+  //initialize lastLocation variable
+  ECE3_read_IR(rawSensorValues);
+  scaleSensorValues();
+  lastLocation = sensorFusion();
+
+  digitalWrite(RED_LED, LOW);
+  digitalWrite(GREEN_LED, HIGH);
 }
 
 void loop() {
   if(checkBumpers()){
     finished = true;
-    digitalWrite(GREEN_LED, HIGH);
-    digitalWrite(RED_LED, LOW);
+    digitalWrite(GREEN_LED, LOW);
+    digitalWrite(RED_LED, HIGH);
   }
   
   if(!finished){
@@ -71,8 +93,16 @@ void loop() {
       Serial.print(" ");
     }
     Serial.println(location);*/
-    motorR =  baseSpeed + baseSpeed * ((location) * .001);
-    motorL = baseSpeed + baseSpeed * ((location) *  -.001);
+
+    if(lastDerivativeTime - millis() > derivativeUpdateRate){
+      lastDerivativeTime = millis();
+      derivativeError = location - lastLocation;
+      lastLocation = location;
+    }
+
+
+    motorR =  baseSpeed + baseSpeed * ((location + derivativeError) * .0001);
+    motorL = baseSpeed + baseSpeed * ((location + derivativeError) *  -.0001);
     
     if(motorR < 20){
       motorR = 20;
@@ -130,4 +160,17 @@ void scaleSensorValues(){
 
 float sensorFusion(){ // 8-4-2-1 weighted total
   return (-(8.0*sensorValues[0]+6.0*sensorValues[1]+6.0*sensorValues[2]+3.0*sensorValues[3]) + (3.0*sensorValues[4]+6.0*sensorValues[5]+6.0*sensorValues[6]+8.0*sensorValues[7]))/4.0f; 
+}
+
+void calibrateSensors(){
+  //take 10 readings and update min value of each sensor
+  driveMotors(0,0);
+  for(int i = 0; i<9; i++){
+    ECE3_read_IR(rawSensorValues);
+      for(int j=0; j<8; j++){
+        if(rawSensorValues[j] < sensorMinOffset[j]){
+        sensorMinOffset[j] = rawSensorValues[j];
+      }
+    }
+  }
 }
