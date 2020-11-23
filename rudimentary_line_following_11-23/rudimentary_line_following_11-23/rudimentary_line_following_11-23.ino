@@ -15,6 +15,8 @@
 #define MIN_SPEED 20
 #define MAX_SPEED 150
 
+#define TURN_ENCODER_DIFF 750
+
 #define KP 0.00100
 #define KD 0.01000
 
@@ -37,13 +39,17 @@ int sensorSum = 0;
 float motorR = BASE_SPEED;
 float motorL = BASE_SPEED;
 
+//encoder tracker variables
+volatile uint32_t left_encoder = 0;
+volatile uint32_t right_encoder = 0;
+
 bool finished = false;
 
 uint8_t blackLineCounter = 0;
 
 void setup() {
   ECE3_Init();
-  //Serial.begin(9600); // set the data rate in bits per second for serial data transmission, might be useful for testing
+  Serial.begin(9600); // set the data rate in bits per second for serial data transmission, might be useful for testing
   
    //setup button & LED pins
   pinMode(RED_LED, OUTPUT);
@@ -65,6 +71,10 @@ void setup() {
   pinMode(BUTTON_L, INPUT_PULLUP);
   pinMode(BUTTON_R, INPUT_PULLUP);
 
+  //setup encoder tracking interrupts
+  attachInterrupt(ENCODE_R, incr_r, FALLING);
+  attachInterrupt(ENCODE_L, incr_l, FALLING);
+
   digitalWrite(RED_LED, HIGH);
   while(digitalRead(BUTTON_L)){};
   calibrateSensors();
@@ -75,8 +85,8 @@ void setup() {
   while(digitalRead(BUTTON_L)){};
   
   driveMotors(0, 0);
-  digitalWrite(NSLPR, HIGH);
-  digitalWrite(NSLPL, HIGH);
+  digitalWrite(NSLPR, LOW);
+  digitalWrite(NSLPL, LOW);
   digitalWrite(DIRL, LOW);
   digitalWrite(DIRR, LOW);
 
@@ -89,10 +99,12 @@ void setup() {
   digitalWrite(BLUE_LED, LOW);
   digitalWrite(GREEN_LED, HIGH);
   delay(500);
+
+  turn();
 }
 
 void loop() {
-  sensorSum=0;
+  /*sensorSum=0;
   if(checkBumpers()){
     finished = true;
     digitalWrite(GREEN_LED, LOW);
@@ -119,13 +131,7 @@ void loop() {
     }
     Serial.println(location);
     */
-//lastDerivativeTime - millis()
-//    if(millis() - lastDerivativeTime > derivativeUpdateRate){
-//      lastDerivativeTime = millis();
-//      derivativeError = location - lastLocation;
-//      lastLocation = location;
-//    }
-
+    /*
     lastDerivativeTime = millis();
     derivativeError = location - lastLocation;
     lastLocation = location;
@@ -164,7 +170,7 @@ void loop() {
     lastLocation = sensorFusion();
     finished = false;
     blackLineCounter = 0;
-  }
+  }*/
 }
 
 
@@ -181,6 +187,13 @@ void driveMotors(int pwmL, int pwmR){
   }
   analogWrite(PWMR, pwmR);
   analogWrite(PWML, pwmL);
+}
+
+void turn(){
+  resetEncoders();
+  while(left_encoder + right_encoder < TURN_ENCODER_DIFF){
+    driveMotors(50, -50);
+  }
 }
 
 //check if any bumpers are pressed
@@ -222,4 +235,17 @@ void calibrateSensors(){
       }
     }
   }
+}
+
+//encoder interrupt functions
+void incr_r(){
+  right_encoder++;
+}
+void incr_l() {
+  left_encoder++;
+}
+
+void resetEncoders(){
+  left_encoder = 0;
+  right_encoder = 0;
 }
