@@ -15,7 +15,7 @@
 #define MIN_SPEED 20
 #define MAX_SPEED 150
 
-#define TURN_ENCODER_DIFF 750
+#define TURN_ENCODER_DIFF 730
 
 #define KP 0.00100
 #define KD 0.01000
@@ -85,8 +85,8 @@ void setup() {
   while(digitalRead(BUTTON_L)){};
   
   driveMotors(0, 0);
-  digitalWrite(NSLPR, LOW);
-  digitalWrite(NSLPL, LOW);
+  digitalWrite(NSLPR, HIGH);
+  digitalWrite(NSLPL, HIGH);
   digitalWrite(DIRL, LOW);
   digitalWrite(DIRR, LOW);
 
@@ -191,9 +191,12 @@ void driveMotors(int pwmL, int pwmR){
 
 void turn(){
   resetEncoders();
+  digitalWrite(DIRR, HIGH);
   while(left_encoder + right_encoder < TURN_ENCODER_DIFF){
-    driveMotors(50, -50);
+    driveMotors(50, 50);
   }
+  digitalWrite(DIRR, LOW);
+  driveMotors(0,0);
 }
 
 //check if any bumpers are pressed
