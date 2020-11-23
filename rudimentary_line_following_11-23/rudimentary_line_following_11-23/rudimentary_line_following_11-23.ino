@@ -15,7 +15,7 @@
 #define MIN_SPEED 20
 #define MAX_SPEED 150
 
-#define TURN_ENCODER_DIFF 730
+#define TURN_ENCODER_DIFF 710
 
 #define KP 0.00100
 #define KD 0.01000
@@ -100,11 +100,10 @@ void setup() {
   digitalWrite(GREEN_LED, HIGH);
   delay(500);
 
-  turn();
 }
 
 void loop() {
-  /*sensorSum=0;
+  sensorSum=0;
   if(checkBumpers()){
     finished = true;
     digitalWrite(GREEN_LED, LOW);
@@ -119,9 +118,12 @@ void loop() {
 
     if(sensorSum > 7250){
       blackLineCounter++;
+    }else{
+      blackLineCounter = 0;
     }
     if(blackLineCounter > 5){
-      finished = true;
+      blackLineCounter = 0;
+      turn();
     }
     
     
@@ -131,7 +133,7 @@ void loop() {
     }
     Serial.println(location);
     */
-    /*
+    
     lastDerivativeTime = millis();
     derivativeError = location - lastLocation;
     lastLocation = location;
@@ -170,7 +172,7 @@ void loop() {
     lastLocation = sensorFusion();
     finished = false;
     blackLineCounter = 0;
-  }*/
+  }
 }
 
 
@@ -193,7 +195,7 @@ void turn(){
   resetEncoders();
   digitalWrite(DIRR, HIGH);
   while(left_encoder + right_encoder < TURN_ENCODER_DIFF){
-    driveMotors(50, 50);
+    driveMotors(100, 100);
   }
   digitalWrite(DIRR, LOW);
   driveMotors(0,0);
