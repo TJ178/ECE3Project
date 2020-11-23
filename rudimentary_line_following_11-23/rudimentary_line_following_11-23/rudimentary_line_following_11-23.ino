@@ -15,7 +15,7 @@
 #define MIN_SPEED 20
 #define MAX_SPEED 150
 
-#define TURN_ENCODER_DIFF 730
+#define TURN_ENCODER_DIFF 715
 
 #define KP 0.00100
 #define KD 0.01000
@@ -24,8 +24,8 @@
 int bumpers[] = {24, 25, 6, 27, 8, 28};
 
 // manually initialize these using your calibration data
-float sensorMinOffset[] = {579.0f, 482.0f, 511.0f, 393.0f, 434.0f, 538.0f, 511.0f, 553.0f}; 
-float sensorMaxFactor[] = {1636.0f, 1691.0f, 1713.0f, 1139.0f, 1175.0f, 1712.0f, 1681.0f, 1697.0f};
+float sensorMinOffset[] = {765.0f,714.4f,629.0f,629.0f,697.0f,765.0f,697.0f,997.0f}; 
+float sensorMaxFactor[] = {1735.0f,1785.6f,1871.0f,1368.0f,1627.4f,1735.0f,1803.0f,1503.0f};
 
 uint16_t rawSensorValues[8]={0,0,0,0,0,0,0,0};
 uint16_t sensorValues[8]={0,0,0,0,0,0,0,0};
@@ -44,6 +44,7 @@ volatile uint32_t left_encoder = 0;
 volatile uint32_t right_encoder = 0;
 
 bool finished = false;
+bool hasTurned=false;
 
 uint8_t blackLineCounter = 0;
 
@@ -99,12 +100,10 @@ void setup() {
   digitalWrite(BLUE_LED, LOW);
   digitalWrite(GREEN_LED, HIGH);
   delay(500);
-
-  turn();
 }
 
 void loop() {
-  /*sensorSum=0;
+  sensorSum=0;
   if(checkBumpers()){
     finished = true;
     digitalWrite(GREEN_LED, LOW);
@@ -116,12 +115,22 @@ void loop() {
     scaleSensorValues();
     float location = sensorFusion();
     sensorSum = sumOfSensors();
-
-    if(sensorSum > 7250){
+    if(sensorSum > 6500){
       blackLineCounter++;
     }
-    if(blackLineCounter > 5){
-      finished = true;
+    else{
+      blackLineCounter=0;
+    }
+    if(blackLineCounter > 3){
+      if(!hasTurned){
+        driveMotors(0,0);
+      blackLineCounter=0;
+      turn();
+      hasTurned = true;
+      }
+      else{
+        finished=true;
+      }
     }
     
     
@@ -131,11 +140,10 @@ void loop() {
     }
     Serial.println(location);
     */
-    /*
+    
     lastDerivativeTime = millis();
     derivativeError = location - lastLocation;
     lastLocation = location;
-
     motorR = BASE_SPEED + BASE_SPEED*(derivativeError * KD) + BASE_SPEED*location*KP;
     motorL = BASE_SPEED + BASE_SPEED*(derivativeError *  -KD) + BASE_SPEED*location*-KP;
     
@@ -164,13 +172,12 @@ void loop() {
     digitalWrite(GREEN_LED, HIGH);
     digitalWrite(RED_LED, LOW);
     delay(500);
-
     ECE3_read_IR(rawSensorValues);
     scaleSensorValues();
     lastLocation = sensorFusion();
     finished = false;
     blackLineCounter = 0;
-  }*/
+  }
 }
 
 
