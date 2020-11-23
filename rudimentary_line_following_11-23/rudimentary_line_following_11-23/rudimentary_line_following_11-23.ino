@@ -13,7 +13,7 @@
 
 #define BASE_SPEED 75
 #define MIN_SPEED 20
-#define MAX_SPEED 100
+#define MAX_SPEED 150
 
 #define KP 0.00100
 #define KD 0.01000
@@ -22,8 +22,8 @@
 int bumpers[] = {24, 25, 6, 27, 8, 28};
 
 // manually initialize these using your calibration data
-float sensorMinOffset[] = {765.0f,714.4f,629.0f,629.0f,697.0f,765.0f,697.0f,997.0f}; 
-float sensorMaxFactor[] = {1735.0f,1785.6f,1871.0f,1368.0f,1627.4f,1735.0f,1803.0f,1503.0f}; 
+float sensorMinOffset[] = {579.0f, 482.0f, 511.0f, 393.0f, 434.0f, 538.0f, 511.0f, 553.0f}; 
+float sensorMaxFactor[] = {1636.0f, 1691.0f, 1713.0f, 1139.0f, 1175.0f, 1712.0f, 1681.0f, 1697.0f};
 
 uint16_t rawSensorValues[8]={0,0,0,0,0,0,0,0};
 uint16_t sensorValues[8]={0,0,0,0,0,0,0,0};
@@ -38,6 +38,8 @@ float motorR = BASE_SPEED;
 float motorL = BASE_SPEED;
 
 bool finished = false;
+
+uint8_t blackLineCounter = 0;
 
 void setup() {
   ECE3_Init();
@@ -103,8 +105,11 @@ void loop() {
     float location = sensorFusion();
     sensorSum = sumOfSensors();
 
-    if(sensorSum > 6500){
-      finished=true;
+    if(sensorSum > 7250){
+      blackLineCounter++;
+    }
+    if(blackLineCounter > 5){
+      finished = true;
     }
     
     
@@ -158,6 +163,7 @@ void loop() {
     scaleSensorValues();
     lastLocation = sensorFusion();
     finished = false;
+    blackLineCounter = 0;
   }
 }
 
