@@ -34,7 +34,6 @@ float lastLocation;
 float derivativeError;
 long lastDerivativeTime = 0;
 uint16_t derivativeUpdateRate = 250; //millis between updates
-int sensorSum = 0;
 
 float motorR = BASE_SPEED;
 float motorL = BASE_SPEED;
@@ -44,12 +43,13 @@ volatile uint32_t left_encoder = 0;
 volatile uint32_t right_encoder = 0;
 
 bool finished = false;
+bool hasTurned = false;
 
 uint8_t blackLineCounter = 0;
 
 void setup() {
   ECE3_Init();
-  Serial.begin(9600); // set the data rate in bits per second for serial data transmission, might be useful for testing
+  //Serial.begin(9600); // set the data rate in bits per second for serial data transmission, might be useful for testing
   
    //setup button & LED pins
   pinMode(RED_LED, OUTPUT);
@@ -99,11 +99,9 @@ void setup() {
   digitalWrite(BLUE_LED, LOW);
   digitalWrite(GREEN_LED, HIGH);
   delay(500);
-
 }
 
 void loop() {
-  sensorSum=0;
   if(checkBumpers()){
     finished = true;
     digitalWrite(GREEN_LED, LOW);
@@ -114,30 +112,28 @@ void loop() {
     ECE3_read_IR(rawSensorValues); // read raw sensor values
     scaleSensorValues();
     float location = sensorFusion();
-    sensorSum = sumOfSensors();
-
-    if(sensorSum > 7250){
+    
+    if(sumOfSensors() > 7250){
       blackLineCounter++;
     }else{
       blackLineCounter = 0;
     }
+    
     if(blackLineCounter > 5){
-      blackLineCounter = 0;
-      turn();
+      if(!hasTurned){
+        driveMotors(0,0);
+        blackLineCounter = 0;
+        turn();
+        hasTurned = true;
+      }else{
+        finished = true;
+      }
     }
-    
-    
-    /*
-     * if(location > 0){
-      Serial.print(" ");
-    }
-    Serial.println(location);
-    */
-    
+
+   
     lastDerivativeTime = millis();
     derivativeError = location - lastLocation;
     lastLocation = location;
-
     motorR = BASE_SPEED + BASE_SPEED*(derivativeError * KD) + BASE_SPEED*location*KP;
     motorL = BASE_SPEED + BASE_SPEED*(derivativeError *  -KD) + BASE_SPEED*location*-KP;
     
@@ -155,9 +151,7 @@ void loop() {
     }
     
     driveMotors( (int) motorL, (int) motorR);
-    //Serial.print(motorL);
-    //Serial.print('\t');
-    //Serial.println(motorR);
+    
   }else{
     driveMotors(0,0);
     
@@ -166,11 +160,11 @@ void loop() {
     digitalWrite(GREEN_LED, HIGH);
     digitalWrite(RED_LED, LOW);
     delay(500);
-
     ECE3_read_IR(rawSensorValues);
     scaleSensorValues();
     lastLocation = sensorFusion();
     finished = false;
+    hasTurned = false;
     blackLineCounter = 0;
   }
 }
@@ -222,10 +216,6 @@ float sensorFusion(){ // 8-4-2-1 weighted total
 }
 
 int sumOfSensors(){
-  //int sum = 0;
-//  for(int i=0; i<8; i++){
-//    sum += sensorValues[i];
-//  }
   return sensorValues[0]+sensorValues[1]+sensorValues[2]+sensorValues[3]+sensorValues[4]+sensorValues[5]+sensorValues[6]+sensorValues[7];
 }
 
