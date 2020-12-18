@@ -11,18 +11,18 @@
 #define BUTTON_R P1_1
 #define BUTTON_L P1_4
 
-#define BASE_SPEED 50
+#define BASE_SPEED 75
 #define MIN_SPEED 20
 #define MAX_SPEED 150
 
-#define KP 0.00070
-#define KD 0.00000
+#define KP 0.00100
+#define KD 0.0100
 
 int bumpers[] = {24, 25, 6, 27, 8, 28};
 
 // manually initialize these using your calibration data
-float sensorMinOffset[] = {597.0f, 493.0f, 534.0f, 410.0f, 455.0f, 560.0f, 516.0f, 580.0f}; 
-float sensorMaxFactor[] = {1653.0f, 1757.0f, 1716.0f, 1268.0f, 1317.0f, 1690.0f, 1734.0f, 1670.0f};
+float sensorMinOffset[] = {579.0f, 482.0f, 511.0f, 393.0f, 434.0f, 538.0f, 511.0f, 553.0f}; 
+float sensorMaxFactor[] = {1636.0f, 1691.0f, 1713.0f, 1139.0f, 1175.0f, 1712.0f, 1681.0f, 1697.0f};
 
 uint16_t rawSensorValues[8]={0,0,0,0,0,0,0,0};
 uint16_t sensorValues[8]={0,0,0,0,0,0,0,0};
@@ -185,13 +185,13 @@ float sensorFusion(){ // 8-4-2-1 weighted total
   return (-(8.0*sensorValues[0]+4.0*sensorValues[1]+2.0*sensorValues[2]+1.0*sensorValues[3]) + (1.0*sensorValues[4]+2.0*sensorValues[5]+4.0*sensorValues[6]+8.0*sensorValues[7]))/4.0f; 
 }
 
-//int sumOfSensors(){
-//  int sum = 0;
-//  for(int i=0; i<8; i++){
-//    sum += sensorValues[i];
-//  }
-//  return sum;
-//}
+int sumOfSensors(){
+  int sum = 0;
+  for(int i=0; i<8; i++){
+    sum += sensorValues[i];
+  }
+  return sum;
+}
 
 void calibrateSensors(){
   //take 10 readings and update min value of each sensor

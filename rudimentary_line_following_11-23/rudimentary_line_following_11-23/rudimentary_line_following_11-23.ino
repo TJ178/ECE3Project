@@ -11,24 +11,25 @@
 #define BUTTON_R P1_1
 #define BUTTON_L P1_4
 
-#define BASE_SPEED 75
+#define BASE_SPEED 115
 #define MIN_SPEED 20
-#define MAX_SPEED 150
+#define MAX_SPEED 230
 
-#define TURN_ENCODER_DIFF 710
+#define BLACK_LINE_MAXCOUNT 2
+#define TURN_ENCODER_DIFF 700
 
-#define KP 0.00100
-#define KD 0.01000
+#define KP 0.0018
+#define KD 0.045
 
 
 int bumpers[] = {24, 25, 6, 27, 8, 28};
 
 // manually initialize these using your calibration data
-float sensorMinOffset[] = {579.0f, 482.0f, 511.0f, 393.0f, 434.0f, 538.0f, 511.0f, 553.0f}; 
-float sensorMaxFactor[] = {1636.0f, 1691.0f, 1713.0f, 1139.0f, 1175.0f, 1712.0f, 1681.0f, 1697.0f};
+float sensorMinOffset[] = {638.0f, 530.0f, 550.0f, 417.0f, 451.0f, 569.0f, 513.0f, 582.0f};
+float sensorMaxFactor[] = {1612.0f, 1434.0f, 1550.0f, 1054.0f, 1076.0f, 1672.0f, 1477.0f, 1668.0f};
 
-uint16_t rawSensorValues[8]={0,0,0,0,0,0,0,0};
-uint16_t sensorValues[8]={0,0,0,0,0,0,0,0};
+uint16_t rawSensorValues[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+uint16_t sensorValues[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
 float lastLocation;
 float derivativeError;
@@ -50,17 +51,17 @@ uint8_t blackLineCounter = 0;
 void setup() {
   ECE3_Init();
   //Serial.begin(9600); // set the data rate in bits per second for serial data transmission, might be useful for testing
-  
-   //setup button & LED pins
+
+  //setup button & LED pins
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
   pinMode(BLUE_LED, OUTPUT);
 
   //setup bumper pins
-  for(int i = 0; i < 6; i++){
-     pinMode(bumpers[i], INPUT_PULLUP);
+  for (int i = 0; i < 6; i++) {
+    pinMode(bumpers[i], INPUT_PULLUP);
   }
-  
+
   //setup motor pins
   pinMode(DIRL, OUTPUT);
   pinMode(DIRR, OUTPUT);
@@ -76,14 +77,14 @@ void setup() {
   attachInterrupt(ENCODE_L, incr_l, FALLING);
 
   digitalWrite(RED_LED, HIGH);
-  while(digitalRead(BUTTON_L)){};
+  while (digitalRead(BUTTON_L)) {};
   calibrateSensors();
   digitalWrite(RED_LED, LOW);
-  digitalWrite(BLUE_LED, HIGH); 
+  digitalWrite(BLUE_LED, HIGH);
 
   delay(500);
-  while(digitalRead(BUTTON_L)){};
-  
+  while (digitalRead(BUTTON_L)) {};
+
   driveMotors(0, 0);
   digitalWrite(NSLPR, HIGH);
   digitalWrite(NSLPL, HIGH);
@@ -102,63 +103,73 @@ void setup() {
 }
 
 void loop() {
-  if(checkBumpers()){
+  
+  if (checkBumpers()) {
     finished = true;
     digitalWrite(GREEN_LED, LOW);
-    digitalWrite(RED_LED, HIGH);
+    digitalWrite(BLUE_LED, HIGH);
   }
-  
-  if(!finished){
+
+  if (!finished) {
     ECE3_read_IR(rawSensorValues); // read raw sensor values
     scaleSensorValues();
     float location = sensorFusion();
-    
-    if(sumOfSensors() > 7250){
+
+    if (sumOfSensors() > 7250) {
       blackLineCounter++;
-    }else{
+    } else {
       blackLineCounter = 0;
     }
-    
-    if(blackLineCounter > 5){
-      if(!hasTurned){
-        driveMotors(0,0);
+
+    if (blackLineCounter > BLACK_LINE_MAXCOUNT) {
+      if (!hasTurned) {
+        driveMotors(0, 0);
         blackLineCounter = 0;
         turn();
         hasTurned = true;
-      }else{
+        driveMotors(BASE_SPEED, BASE_SPEED);
+        delay(275);
+
+      } else {
         finished = true;
       }
     }
 
-   
+    if(sumOfSensors() < 250){
+      location = lastLocation;
+      digitalWrite(YELLOW_LED, HIGH);
+    }
+
+
     lastDerivativeTime = millis();
     derivativeError = location - lastLocation;
     lastLocation = location;
-    motorR = BASE_SPEED + BASE_SPEED*(derivativeError * KD) + BASE_SPEED*location*KP;
-    motorL = BASE_SPEED + BASE_SPEED*(derivativeError *  -KD) + BASE_SPEED*location*-KP;
-    
-    if(motorR < MIN_SPEED){
+    motorR = BASE_SPEED + BASE_SPEED * (derivativeError * KD) + BASE_SPEED * location * KP;
+    motorL = BASE_SPEED + BASE_SPEED * (derivativeError *  -KD) + BASE_SPEED * location * -KP;
+
+    if (motorR < MIN_SPEED) {
       motorR = MIN_SPEED;
     }
-    if(motorR > MAX_SPEED){
+    if (motorR > MAX_SPEED) {
       motorR == MAX_SPEED;
     }
-    if(motorL < MIN_SPEED){
+    if (motorL < MIN_SPEED) {
       motorL = MIN_SPEED;
     }
-    if(motorL > MAX_SPEED){
+    if (motorL > MAX_SPEED) {
       motorL = MAX_SPEED;
     }
-    
+
     driveMotors( (int) motorL, (int) motorR);
-    
-  }else{
-    driveMotors(0,0);
-    
+
+  } else {
+    driveMotors(0, 0);
+
     //restart running if button is pressed after stopping
-    while(digitalRead(BUTTON_L)){};
+    while (digitalRead(BUTTON_L)) {};
     digitalWrite(GREEN_LED, HIGH);
-    digitalWrite(RED_LED, LOW);
+    digitalWrite(BLUE_LED, LOW);
+    digitalWrite(YELLOW_LED, LOW);
     delay(500);
     ECE3_read_IR(rawSensorValues);
     scaleSensorValues();
@@ -170,62 +181,62 @@ void loop() {
 }
 
 
-void driveMotors(int pwmL, int pwmR){
-  if(pwmL > 255){
+void driveMotors(int pwmL, int pwmR) {
+  if (pwmL > 255) {
     pwmL = 255;
-  }else if(pwmL < 0){
+  } else if (pwmL < 0) {
     pwmL = 0;
   }
-  if(pwmR > 255){
+  if (pwmR > 255) {
     pwmR = 255;
-  }else if(pwmR < 0){
+  } else if (pwmR < 0) {
     pwmR = 0;
   }
   analogWrite(PWMR, pwmR);
   analogWrite(PWML, pwmL);
 }
 
-void turn(){
+void turn() {
   resetEncoders();
   digitalWrite(DIRR, HIGH);
-  while(left_encoder + right_encoder < TURN_ENCODER_DIFF){
+  while (left_encoder + right_encoder < TURN_ENCODER_DIFF) {
     driveMotors(100, 100);
   }
   digitalWrite(DIRR, LOW);
-  driveMotors(0,0);
+  driveMotors(1, 1);
 }
 
 //check if any bumpers are pressed
-bool checkBumpers(){
-  for(int i = 0; i < 6; i++){
-    if(!digitalRead(bumpers[i])){
+bool checkBumpers() {
+  for (int i = 0; i < 6; i++) {
+    if (!digitalRead(bumpers[i])) {
       return true;
     }
   }
   return false;
 }
 
-void scaleSensorValues(){
-  for(int i=0; i<7; i++){ 
-    sensorValues[i]=((rawSensorValues[i]-sensorMinOffset[i])*1000)/sensorMaxFactor[i]; // normalize output value of each sensor to be between 0 and 1000
+void scaleSensorValues() {
+  for (int i = 0; i < 7; i++) {
+    sensorValues[i] = ((rawSensorValues[i] - sensorMinOffset[i]) * 1000) / sensorMaxFactor[i]; // normalize output value of each sensor to be between 0 and 1000
   }
 }
 
-float sensorFusion(){ // 8-4-2-1 weighted total
-  return (-(8.0*sensorValues[0]+4.0*sensorValues[1]+2.0*sensorValues[2]+1.0*sensorValues[3]) + (1.0*sensorValues[4]+2.0*sensorValues[5]+4.0*sensorValues[6]+8.0*sensorValues[7]))/4.0f; 
+float sensorFusion() { // 8-4-2-1 weighted total
+  return (-(10.0 * sensorValues[0] + 6.0 * sensorValues[1] + 4.0 * sensorValues[2] + 1.0 * sensorValues[3]) + (1.0 * sensorValues[4] + 4.0 * sensorValues[5] + 6.0 * sensorValues[6] + 10.0 * sensorValues[7])) / 4.0f;
 }
 
-int sumOfSensors(){
-  return sensorValues[0]+sensorValues[1]+sensorValues[2]+sensorValues[3]+sensorValues[4]+sensorValues[5]+sensorValues[6]+sensorValues[7];
+int sumOfSensors() {
+  return sensorValues[0] + sensorValues[1] + sensorValues[2] + sensorValues[3] + sensorValues[4] + sensorValues[5] + sensorValues[6] + sensorValues[7];
 }
 
-void calibrateSensors(){
+void calibrateSensors() {
   //take 10 readings and update min value of each sensor
-  driveMotors(0,0);
-  for(int i = 0; i<9; i++){
+  driveMotors(0, 0);
+  for (int i = 0; i < 9; i++) {
     ECE3_read_IR(rawSensorValues);
-      for(int j=0; j<8; j++){
-        if(rawSensorValues[j] < sensorMinOffset[j]){
+    for (int j = 0; j < 8; j++) {
+      if (rawSensorValues[j] < sensorMinOffset[j]) {
         sensorMinOffset[j] = rawSensorValues[j];
       }
     }
@@ -233,14 +244,14 @@ void calibrateSensors(){
 }
 
 //encoder interrupt functions
-void incr_r(){
+void incr_r() {
   right_encoder++;
 }
 void incr_l() {
   left_encoder++;
 }
 
-void resetEncoders(){
+void resetEncoders() {
   left_encoder = 0;
   right_encoder = 0;
 }
