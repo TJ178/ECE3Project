@@ -11,15 +11,15 @@
 #define BUTTON_R P1_1
 #define BUTTON_L P1_4
 
-#define BASE_SPEED 115
+#define BASE_SPEED 90
 #define MIN_SPEED 20
-#define MAX_SPEED 230
+#define MAX_SPEED 180
 
 #define BLACK_LINE_MAXCOUNT 2
 #define TURN_ENCODER_DIFF 700
 
-#define KP 0.0018
-#define KD 0.045
+#define KP 0.001
+#define KD 0.027
 
 
 int bumpers[] = {24, 25, 6, 27, 8, 28};
@@ -223,7 +223,7 @@ void scaleSensorValues() {
 }
 
 float sensorFusion() { // 8-4-2-1 weighted total
-  return (-(10.0 * sensorValues[0] + 6.0 * sensorValues[1] + 4.0 * sensorValues[2] + 1.0 * sensorValues[3]) + (1.0 * sensorValues[4] + 4.0 * sensorValues[5] + 6.0 * sensorValues[6] + 10.0 * sensorValues[7])) / 4.0f;
+  return (-(8.0 * sensorValues[0] + 4.0 * sensorValues[1] + 2.0 * sensorValues[2] + 1.0 * sensorValues[3]) + (1.0 * sensorValues[4] + 2.0 * sensorValues[5] + 4.0 * sensorValues[6] + 8.0 * sensorValues[7])) / 4.0f;
 }
 
 int sumOfSensors() {
